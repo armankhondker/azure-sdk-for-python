@@ -28,8 +28,8 @@ from typing import Any, Dict, List, Optional, Tuple, Callable, Awaitable, cast
 
 from azure.core.pipeline.transport import HttpRequest  # pylint: disable=no-legacy-azure-core-http-response-import
 
-from ._global_partition_endpoint_manager_circuit_breaker_async import \
-    _GlobalPartitionEndpointManagerForCircuitBreakerAsync
+from ._global_partition_endpoint_manager_per_partition_automatic_failover_async import \
+    _GlobalPartitionEndpointManagerForPerPartitionAutomaticFailoverAsync
 from .._availability_strategy import CrossRegionHedgingStrategy
 from .._availability_strategy_handler_base import AvailabilityStrategyHandlerMixin
 from .._request_object import RequestObject
@@ -122,7 +122,7 @@ class CrossRegionAsyncHedgingHandler(AvailabilityStrategyHandlerMixin):
     async def execute_request(
         self,
         request_params: RequestObject,
-        global_endpoint_manager: _GlobalPartitionEndpointManagerForCircuitBreakerAsync,
+        global_endpoint_manager: _GlobalPartitionEndpointManagerForPerPartitionAutomaticFailoverAsync,
         request: HttpRequest,
         execute_request_fn: Callable[..., Awaitable[ResponseType]]
     ) -> ResponseType:
@@ -136,8 +136,8 @@ class CrossRegionAsyncHedgingHandler(AvailabilityStrategyHandlerMixin):
 
         :param request_params: Parameters for the request including operation type and strategy
         :type request_params: RequestObject
-        :param global_endpoint_manager: Manager for handling global endpoints and circuit breaking
-        :type global_endpoint_manager: _GlobalPartitionEndpointManagerForCircuitBreakerAsync
+        :param global_endpoint_manager: Manager for handling global endpoints and ppaf/ppcb
+        :type global_endpoint_manager: _GlobalPartitionEndpointManagerForPerPartitionAutomaticFailoverAsync
         :param request: The HTTP request to be executed
         :type request: HttpRequest
         :param execute_request_fn: Async function to execute the actual request
@@ -218,7 +218,7 @@ _cross_region_hedging_handler = CrossRegionAsyncHedgingHandler()
 
 async def execute_with_availability_strategy(
     request_params: RequestObject,
-    global_endpoint_manager: _GlobalPartitionEndpointManagerForCircuitBreakerAsync,
+    global_endpoint_manager: _GlobalPartitionEndpointManagerForPerPartitionAutomaticFailoverAsync,
     request: HttpRequest,
     execute_request_fn: Callable[..., Awaitable[ResponseType]]
 ) -> ResponseType:
@@ -234,8 +234,8 @@ async def execute_with_availability_strategy(
 
     :param request_params: Parameters containing operation type, strategy, and routing preferences
     :type request_params: RequestObject
-    :param global_endpoint_manager: Manager for handling global endpoints and circuit breaking
-    :type global_endpoint_manager: _GlobalPartitionEndpointManagerForCircuitBreakerAsync
+    :param global_endpoint_manager: Manager for handling global endpoints and ppaf/ppcb
+    :type global_endpoint_manager: _GlobalPartitionEndpointManagerForPerPartitionAutomaticFailoverAsync
     :param request: The HTTP request to be executed
     :type request: HttpRequest
     :param execute_request_fn: Async function to execute the actual request

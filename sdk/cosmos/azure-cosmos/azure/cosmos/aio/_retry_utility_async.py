@@ -32,7 +32,7 @@ from azure.core.pipeline.policies import AsyncRetryPolicy
 
 from ._global_partition_endpoint_manager_per_partition_automatic_failover_async import \
     _GlobalPartitionEndpointManagerForPerPartitionAutomaticFailoverAsync
-from .. import _default_retry_policy, _database_account_retry_policy
+from .. import _default_retry_policy, _database_account_retry_policy, _service_unavailable_retry_policy
 from .. import _endpoint_discovery_retry_policy
 from .. import _gone_retry_policy
 from .. import _resource_throttle_retry_policy

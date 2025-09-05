@@ -31,7 +31,8 @@ from azure.core.pipeline.transport import HttpRequest  # pylint: disable=no-lega
 
 from ._availability_strategy import CrossRegionHedgingStrategy
 from ._availability_strategy_handler_base import AvailabilityStrategyHandlerMixin
-from ._global_partition_endpoint_manager_circuit_breaker import _GlobalPartitionEndpointManagerForCircuitBreaker
+from ._global_partition_endpoint_manager_per_partition_automatic_failover import \
+    _GlobalPartitionEndpointManagerForPerPartitionAutomaticFailover
 from ._request_object import RequestObject
 
 ResponseType = Tuple[Dict[str, Any], Dict[str, Any]]
@@ -113,7 +114,7 @@ class CrossRegionHedgingHandler(AvailabilityStrategyHandlerMixin):
     def execute_request(
         self,
         request_params: RequestObject,
-        global_endpoint_manager: _GlobalPartitionEndpointManagerForCircuitBreaker,
+        global_endpoint_manager: _GlobalPartitionEndpointManagerForPerPartitionAutomaticFailover,
         request: HttpRequest,
         execute_request_fn: Callable[..., ResponseType]
     ) -> ResponseType:
@@ -121,8 +122,8 @@ class CrossRegionHedgingHandler(AvailabilityStrategyHandlerMixin):
 
         :param request_params: Parameters for the request including operation type and strategy
         :type request_params: RequestObject
-        :param global_endpoint_manager: Manager for handling global endpoints and circuit breaking
-        :type global_endpoint_manager: _GlobalPartitionEndpointManagerForCircuitBreaker
+        :param global_endpoint_manager: Manager for handling global endpoints and ppaf/ppcb
+        :type global_endpoint_manager: _GlobalPartitionEndpointManagerForPerPartitionAutomaticFailover
         :param request: The HTTP request to be executed
         :type request: HttpRequest
         :param execute_request_fn: Function to execute the actual request
@@ -186,7 +187,7 @@ class CrossRegionHedgingHandler(AvailabilityStrategyHandlerMixin):
     def _record_cancel_for_first_request(
             self,
             request_params_holder: SimpleNamespace,
-            global_endpoint_manager: Any) -> None:
+            global_endpoint_manager: _GlobalPartitionEndpointManagerForPerPartitionAutomaticFailover) -> None:
         """Record failure for the first request when a subsequent hedged request succeeds.
 
         :param request_params_holder: Container holding the request parameters for the first request
@@ -203,7 +204,7 @@ _cross_region_hedging_handler = CrossRegionHedgingHandler()
 
 def execute_with_hedging(
     request_params: RequestObject,
-    global_endpoint_manager: _GlobalPartitionEndpointManagerForCircuitBreaker,
+    global_endpoint_manager: _GlobalPartitionEndpointManagerForPerPartitionAutomaticFailover,
     request: HttpRequest,
     execute_request_fn: Callable[..., ResponseType]
 ) -> ResponseType:
@@ -211,8 +212,8 @@ def execute_with_hedging(
 
     :param request_params: Parameters for the request including operation type and strategy
     :type request_params: RequestObject
-    :param global_endpoint_manager: Manager for handling global endpoints and circuit breaking
-    :type global_endpoint_manager: _GlobalPartitionEndpointManagerForCircuitBreaker
+    :param global_endpoint_manager: Manager for handling global endpoints and ppcb/ppaf
+    :type global_endpoint_manager: _GlobalPartitionEndpointManagerForPerPartitionAutomaticFailover
     :param request: The HTTP request to be executed
     :type request: HttpRequest
     :param execute_request_fn: Function to execute the actual request
