@@ -1986,7 +1986,7 @@ class RunHandler:
         run: ThreadRun,
         tool_call: RequiredFunctionToolCall,
         tool_call_details: RequiredFunctionToolCallDetails,
-        **kwargs,
+        **kwargs: Any,
     ) -> Optional[Any]:
         """Produce (or override) the output for a required function tool call.
 
@@ -2009,7 +2009,7 @@ class RunHandler:
         self,
         run: ThreadRun,
         tool_call: RequiredMcpToolCall,
-        **kwargs,
+        **kwargs: Any,
     ) -> Optional[ToolApproval]:
         # NOTE: Implementation intentionally returns None; override in subclasses for real approval logic.
         """Return a ``ToolApproval`` for an MCP tool call or ``None`` to indicate rejection/cancellation.
