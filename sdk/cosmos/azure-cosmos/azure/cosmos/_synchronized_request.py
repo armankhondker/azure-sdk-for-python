@@ -29,7 +29,7 @@ from urllib.parse import urlparse
 
 from azure.core.exceptions import DecodeError  # type: ignore
 
-from . import _retry_utility, _availability_strategy_handler
+from . import _retry_utility, _availability_strategy_handler, CrossRegionHedgingStrategy
 from . import exceptions
 from . import http_constants
 from ._request_object import RequestObject
@@ -254,6 +254,11 @@ def SynchronizedRequest(
         request.headers[http_constants.HttpHeaders.ContentLength] = len(request.data)
     elif request.data is None:
         request.headers[http_constants.HttpHeaders.ContentLength] = 0
+
+    if request_params.availability_strategy is None:
+        # if ppaf is enabled, then hedging is enabled by default
+        if global_endpoint_manager.is_per_partition_automatic_failover_enabled():
+            request_params.availability_strategy = CrossRegionHedgingStrategy()
 
     # Handle hedging if availability strategy is applicable
     if _is_availability_strategy_applicable(request_params):
