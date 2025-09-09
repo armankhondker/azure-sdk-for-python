@@ -18,9 +18,11 @@
 * Added cross-regional retries for 503 (Service Unavailable) errors. See [PR 41588](https://github.com/Azure/azure-sdk-for-python/pull/41588).
 * Fixed bug where Hybrid Search queries using parameters were not working. See [PR 42787](https://github.com/Azure/azure-sdk-for-python/pull/42787)
 * Fixed partition scoping for per partition circuit breaker. See [PR 42751](https://github.com/Azure/azure-sdk-for-python/pull/42751)
+* Fixed bug where `partition_key` set to None was not properly handled for some operations. See [PR 42747](https://github.com/Azure/azure-sdk-for-python/pull/42747)
 
 #### Other Changes
 * Added session token false progress merge logic. See [42393](https://github.com/Azure/azure-sdk-for-python/pull/42393)
+* Added a fallback mechanism to AAD scope override. See [PR 42731](https://github.com/Azure/azure-sdk-for-python/pull/42731).
 
 ### 4.14.0b2 (2025-08-12)
 
