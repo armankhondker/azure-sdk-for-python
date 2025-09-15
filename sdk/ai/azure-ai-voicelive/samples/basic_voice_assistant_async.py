@@ -81,6 +81,7 @@ from azure.ai.voicelive.models import (
     AudioInputTranscriptionSettings,
     AudioNoiseReduction,
     AudioEchoCancellation,
+    InputAudio,
 )
 
 # Set up logging
@@ -342,6 +343,11 @@ class BasicVoiceAssistant:
         eou_timeout: float = 4.0,
         eou_secondary_threshold: Optional[float] = None,
         eou_secondary_timeout: Optional[float] = None,
+        # Agent parameters
+        agent_id: Optional[str] = None,
+        agent_connection_string: Optional[str] = None,
+        agent_access_token: Optional[str] = None,
+        phrase_list: Optional[str] = None,
     ):
 
         self.endpoint = endpoint
@@ -365,6 +371,10 @@ class BasicVoiceAssistant:
         self.eou_timeout = eou_timeout
         self.eou_secondary_threshold = eou_secondary_threshold
         self.eou_secondary_timeout = eou_secondary_timeout
+        self.agent_id = agent_id
+        self.agent_connection_string = agent_connection_string
+        self.agent_access_token = agent_access_token
+        self.phrase_list = phrase_list
         self.connection: Optional["VoiceLiveConnection"] = None
         self.audio_processor: Optional[AudioProcessor] = None
         self.session_ready = False
@@ -373,13 +383,26 @@ class BasicVoiceAssistant:
     async def start(self):
         """Start the voice assistant session."""
         try:
-            logger.info(f"Connecting to VoiceLive API with model {self.model}")
+            # Determine connection mode and parameters
+            if self.agent_id and self.agent_connection_string and self.agent_access_token:
+                # Agent-based connection
+                logger.info(f"Connecting to VoiceLive API with agent {self.agent_id}")
+                query_params = {
+                    "agent-connection-string": self.agent_connection_string,
+                    "agent-id": self.agent_id,
+                    "agent-access-token": self.agent_access_token
+                }
+            else:
+                # Model-based connection (existing behavior)
+                logger.info(f"Connecting to VoiceLive API with model {self.model}")
+                query_params = {}
 
             # Connect to VoiceLive WebSocket API
             async with connect(
                 endpoint=self.endpoint,
                 credential=self.credential,
                 model=self.model,
+                query=query_params,
                 connection_options={
                     "max_msg_size": 10 * 1024 * 1024,
                     "heartbeat": 20,
@@ -488,6 +511,17 @@ class BasicVoiceAssistant:
         if self.echo_cancellation:
             input_audio_echo_cancellation = AudioEchoCancellation()
         
+        # Create input audio configuration with phrase list biasing if provided
+        input_audio = None
+        if self.phrase_list:
+            # Parse phrase list from comma-separated string
+            phrases = [phrase.strip() for phrase in self.phrase_list.split(",") if phrase.strip()]
+            if phrases:
+               # input_audio = InputAudio(phrase_list=phrases)
+                logger.info(f"Phrase list biasing enabled with {len(phrases)} phrases: {phrases}")
+            else:
+                logger.warning("⚠️  Empty phrase list provided")
+        
         # Debug logging
         logger.info(f"Language: {self.language}")
         logger.info(f" Model: {self.model}")
@@ -520,6 +554,7 @@ class BasicVoiceAssistant:
             input_audio_transcription=input_audio_transcription,
             input_audio_noise_reduction=input_audio_noise_reduction,
             input_audio_echo_cancellation=input_audio_echo_cancellation,
+            input_audio=input_audio,
         )
 
         conn = self.connection
@@ -656,7 +691,7 @@ def parse_arguments():
         "--endpoint",
         help="Azure VoiceLive endpoint",
         type=str,
-        default=os.environ.get("AZURE_VOICELIVE_ENDPOINT", "wss://api.voicelive.com/v1"),
+        default=os.environ.get("AZURE_VOICELIVE_ENDPOINT", "wss://your-endpoint.cognitiveservices.azure.com/voice-live/realtime"),
     )
 
     parser.add_argument(
@@ -815,6 +850,36 @@ def parse_arguments():
         "--use-token-credential", help="Use Azure token credential instead of API key", action="store_true"
     )
 
+    # Agent parameters
+    parser.add_argument(
+        "--agent-id",
+        help="Azure AI Foundry agent ID for agent-based connection",
+        type=str,
+        default=os.environ.get("AI_FOUNDRY_AGENT_ID"),
+    )
+
+    parser.add_argument(
+        "--agent-connection-string",
+        help="Agent connection string for agent-based connection",
+        type=str,
+        default=os.environ.get("AI_FOUNDRY_AGENT_CONNECTION_STRING"),
+    )
+
+    parser.add_argument(
+        "--agent-access-token",
+        help="Agent access token for agent-based connection",
+        type=str,
+        default=os.environ.get("AI_FOUNDRY_AGENT_ACCESS_TOKEN"),
+    )
+
+    # Phrase list biasing
+    parser.add_argument(
+        "--phrase-list",
+        help="Comma-separated list of phrases to bias speech recognition (e.g., 'Azure,Microsoft,AI,GPT')",
+        type=str,
+        default=os.environ.get("VOICELIVE_PHRASE_LIST"),
+    )
+
     parser.add_argument("--verbose", help="Enable verbose logging", action="store_true")
 
     return parser.parse_args()
@@ -868,6 +933,10 @@ async def main():
             eou_timeout=args.eou_timeout,
             eou_secondary_threshold=args.eou_secondary_threshold,
             eou_secondary_timeout=args.eou_secondary_timeout,
+            agent_id=args.agent_id,
+            agent_connection_string=args.agent_connection_string,
+            agent_access_token=args.agent_access_token,
+            phrase_list=args.phrase_list,
         )
 
         # Setup signal handlers for graceful shutdown
